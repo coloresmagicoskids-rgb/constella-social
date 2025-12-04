@@ -1,0 +1,22 @@
+# Carpetas que nunca deben subirse
+node_modules/
+dist/
+
+# Archivos privados
+.env
+.env.local
+.env.production
+.env.development
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Vite
+.cache/
+.vite/
