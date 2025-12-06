@@ -1,3 +1,4 @@
+// src/components/ConnectionsPanel.jsx
 import React, { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
 
@@ -86,7 +87,7 @@ export default function ConnectionsPanel() {
 
     const { data: profiles, error: profErr } = await supabase
       .from("constella_profiles")
-      .select("id, username, display_name, avatar_url")
+      .select("id, username, display_name, avatar_url, email")
       .in("id", otherIds);
 
     if (profErr) {
@@ -118,11 +119,19 @@ export default function ConnectionsPanel() {
     const {
       data: { user },
     } = await supabase.auth.getUser();
+    if (!user) {
+      setMessage("Sesión no válida.");
+      setSearchLoading(false);
+      return;
+    }
 
+    // 🔎 BÚSQUEDA POR USERNAME, NOMBRE PARA MOSTRAR Y CORREO
     const { data, error } = await supabase
       .from("constella_profiles")
-      .select("id, username, display_name, avatar_url")
-      .ilike("username", `%${term}%`)
+      .select("id, username, display_name, avatar_url, email")
+      .or(
+        `username.ilike.%${term}%,display_name.ilike.%${term}%,email.ilike.%${term}%`
+      )
       .neq("id", user.id)
       .limit(10);
 
@@ -206,12 +215,12 @@ export default function ConnectionsPanel() {
         <h3 className="section-title">Buscar personas</h3>
         <form className="form" onSubmit={handleSearch}>
           <label className="field">
-            <span>Nombre de usuario</span>
+            <span>Nombre de usuario, nombre o correo</span>
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Ej.: carlos, luna_creativa..."
+              placeholder="Ej.: carlos, luna_creativa, alguien@correo.com..."
             />
           </label>
           <button type="submit" className="primary-btn" disabled={searchLoading}>
@@ -230,6 +239,17 @@ export default function ConnectionsPanel() {
                     <span style={{ color: "#9ca3af", fontSize: "0.75rem" }}>
                       @{p.username}
                     </span>
+                    {p.email && (
+                      <span
+                        style={{
+                          color: "#9ca3af",
+                          fontSize: "0.72rem",
+                          marginLeft: 6,
+                        }}
+                      >
+                        · {p.email}
+                      </span>
+                    )}
                   </p>
                   <button
                     type="button"
