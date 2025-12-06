@@ -1,7 +1,7 @@
 // src/components/MosaicFeed.jsx
 import React, { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
-import { useAuth } from "../AuthContext";
+import { useAuth } from "../auth/AuthContext.jsx";
 
 export default function MosaicFeed({ circles, selectedCircle }) {
   const { user } = useAuth();
