@@ -1,7 +1,6 @@
 // src/components/CreateMoment.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { supabase } from "../supabaseClient";
-import { useAuth } from "../AuthContext";
 
 const MOODS = ["inspirado", "reflexivo", "agradecido", "tranquilo", "intenso"];
 
@@ -11,13 +10,7 @@ const VISIBILITIES = [
   { value: "private", label: "Solo yo" },
 ];
 
-export default function CreateMoment({ circles: circlesProp = [], selectedCircle }) {
-  const { user } = useAuth();
-
-  // Si en algún momento quieres que este componente se auto-alimente desde Supabase,
-  // podemos usar este estado + useEffect. Por ahora usa circlesProp como fuente principal.
-  const [circles, setCircles] = useState(circlesProp || []);
-
+export default function CreateMoment({ circles, selectedCircle }) {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [mood, setMood] = useState("inspirado");
@@ -26,25 +19,8 @@ export default function CreateMoment({ circles: circlesProp = [], selectedCircle
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Sincroniza círculos locales si parent cambia circlesProp
-  useEffect(() => {
-    setCircles(circlesProp || []);
-  }, [circlesProp]);
-
-  // Si cambia el círculo seleccionado desde fuera, actualizamos el select
-  useEffect(() => {
-    if (selectedCircle?.id) {
-      setCircleId(selectedCircle.id);
-    }
-  }, [selectedCircle]);
-
   const handlePublish = async (e) => {
     e.preventDefault();
-
-    if (!user) {
-      setStatus("Sesión no válida. Vuelve a iniciar sesión.");
-      return;
-    }
 
     if (!title.trim()) {
       setStatus("Ponle un título al momento.");
@@ -59,6 +35,17 @@ export default function CreateMoment({ circles: circlesProp = [], selectedCircle
     setLoading(true);
     setStatus("");
 
+    const {
+      data: { user },
+      error: userErr,
+    } = await supabase.auth.getUser();
+
+    if (userErr || !user) {
+      setStatus("Sesión no válida.");
+      setLoading(false);
+      return;
+    }
+
     const { error } = await supabase.from("constella_moments").insert({
       user_id: user.id,
       circle_id: circleId,
@@ -69,15 +56,14 @@ export default function CreateMoment({ circles: circlesProp = [], selectedCircle
     });
 
     if (error) {
-      console.error("Error creando momento:", error);
-      setStatus(error.message || "Hubo un problema creando el momento.");
+      setStatus(error.message);
     } else {
-      setStatus("Momento creado.");
+      setStatus("Momento creado correctamente.");
       setTitle("");
       setContent("");
-      // si quieres, aquí podríamos resetear mood/visibility a defaults
-      // setMood("inspirado");
-      // setVisibility("connections");
+      // volvemos a valores por defecto
+      setMood("inspirado");
+      setVisibility("connections");
     }
 
     setLoading(false);
@@ -95,11 +81,12 @@ export default function CreateMoment({ circles: circlesProp = [], selectedCircle
       </div>
 
       <form className="form" onSubmit={handlePublish}>
+        {/* CÍRCULO */}
         <label className="field">
           <span>Círculo</span>
           <select
-            value={circleId || ""}
-            onChange={(e) => setCircleId(e.target.value || "")}
+            value={circleId}
+            onChange={(e) => setCircleId(e.target.value)}
           >
             <option value="">Elige un círculo...</option>
             {circles.map((c) => (
@@ -110,6 +97,7 @@ export default function CreateMoment({ circles: circlesProp = [], selectedCircle
           </select>
         </label>
 
+        {/* TÍTULO */}
         <label className="field">
           <span>Título</span>
           <input
@@ -120,6 +108,7 @@ export default function CreateMoment({ circles: circlesProp = [], selectedCircle
           />
         </label>
 
+        {/* DESCRIPCIÓN */}
         <label className="field">
           <span>Descripción / detalle</span>
           <textarea
@@ -130,15 +119,19 @@ export default function CreateMoment({ circles: circlesProp = [], selectedCircle
           />
         </label>
 
+        {/* ESTADO DE ÁNIMO */}
         <label className="field">
           <span>Estado de ánimo</span>
           <div className="emotion-row">
             {MOODS.map((m) => (
               <button
                 key={m}
-                type="button"
+                type="button" // 🔴 IMPORTANTE: que NO envíe el formulario
                 className={mood === m ? "chip chip-primary" : "chip"}
-                onClick={() => setMood(m)}
+                onClick={() => {
+                  setMood(m);
+                  console.log("Mood seleccionado:", m);
+                }}
               >
                 {m}
               </button>
@@ -146,17 +139,21 @@ export default function CreateMoment({ circles: circlesProp = [], selectedCircle
           </div>
         </label>
 
+        {/* VISIBILIDAD */}
         <label className="field">
           <span>Visibilidad</span>
           <div className="emotion-row">
             {VISIBILITIES.map((v) => (
               <button
                 key={v.value}
-                type="button"
+                type="button" // 🔴 igual aquí
                 className={
                   visibility === v.value ? "chip chip-primary" : "chip"
                 }
-                onClick={() => setVisibility(v.value)}
+                onClick={() => {
+                  setVisibility(v.value);
+                  console.log("Visibilidad seleccionada:", v.value);
+                }}
               >
                 {v.label}
               </button>
@@ -164,6 +161,7 @@ export default function CreateMoment({ circles: circlesProp = [], selectedCircle
           </div>
         </label>
 
+        {/* BOTÓN PUBLICAR */}
         <button type="submit" className="primary-btn" disabled={loading}>
           {loading ? "Guardando..." : "Publicar momento"}
         </button>
