@@ -61,7 +61,6 @@ export default function CreateMoment({ circles, selectedCircle }) {
       setStatus("Momento creado correctamente.");
       setTitle("");
       setContent("");
-      // volvemos a valores por defecto
       setMood("inspirado");
       setVisibility("connections");
     }
@@ -123,19 +122,39 @@ export default function CreateMoment({ circles, selectedCircle }) {
         <label className="field">
           <span>Estado de ánimo</span>
           <div className="emotion-row">
-            {MOODS.map((m) => (
-              <button
-                key={m}
-                type="button" // 🔴 IMPORTANTE: que NO envíe el formulario
-                className={mood === m ? "chip chip-primary" : "chip"}
-                onClick={() => {
-                  setMood(m);
-                  console.log("Mood seleccionado:", m);
-                }}
-              >
-                {m}
-              </button>
-            ))}
+            {MOODS.map((m) => {
+              const isActive = mood === m;
+              return (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => {
+                    setMood(m);
+                    console.log("Mood seleccionado:", m);
+                  }}
+                  className="chip"
+                  style={{
+                    pointerEvents: "auto",
+                    cursor: "pointer",
+                    padding: "6px 12px",
+                    borderRadius: 999,
+                    border: "1px solid",
+                    borderColor: isActive
+                      ? "rgba(255,255,255,0.9)"
+                      : "rgba(255,255,255,0.3)",
+                    background: isActive
+                      ? "rgba(255,255,255,0.15)"
+                      : "transparent",
+                    color: "#f9fafb",
+                    fontSize: "0.8rem",
+                    fontWeight: isActive ? 600 : 400,
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  {m}
+                </button>
+              );
+            })}
           </div>
         </label>
 
@@ -143,21 +162,39 @@ export default function CreateMoment({ circles, selectedCircle }) {
         <label className="field">
           <span>Visibilidad</span>
           <div className="emotion-row">
-            {VISIBILITIES.map((v) => (
-              <button
-                key={v.value}
-                type="button" // 🔴 igual aquí
-                className={
-                  visibility === v.value ? "chip chip-primary" : "chip"
-                }
-                onClick={() => {
-                  setVisibility(v.value);
-                  console.log("Visibilidad seleccionada:", v.value);
-                }}
-              >
-                {v.label}
-              </button>
-            ))}
+            {VISIBILITIES.map((v) => {
+              const isActive = visibility === v.value;
+              return (
+                <button
+                  key={v.value}
+                  type="button"
+                  onClick={() => {
+                    setVisibility(v.value);
+                    console.log("Visibilidad seleccionada:", v.value);
+                  }}
+                  className="chip"
+                  style={{
+                    pointerEvents: "auto",
+                    cursor: "pointer",
+                    padding: "6px 12px",
+                    borderRadius: 999,
+                    border: "1px solid",
+                    borderColor: isActive
+                      ? "rgba(125,211,252,1)"
+                      : "rgba(148,163,184,0.6)",
+                    background: isActive
+                      ? "rgba(56,189,248,0.18)"
+                      : "transparent",
+                    color: "#e5e7eb",
+                    fontSize: "0.8rem",
+                    fontWeight: isActive ? 600 : 400,
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  {v.label}
+                </button>
+              );
+            })}
           </div>
         </label>
 
