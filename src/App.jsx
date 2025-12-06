@@ -1,3 +1,4 @@
+// src/App.jsx
 import React, { useEffect, useState } from "react";
 import MyConstellation from "./components/MyConstellation.jsx";
 import MosaicFeed from "./components/MosaicFeed.jsx";
@@ -8,6 +9,10 @@ import ConnectionsPanel from "./components/ConnectionsPanel.jsx";
 import { AuthProvider, useAuth } from "./auth/AuthContext.jsx";
 import AuthPanel from "./auth/AuthPanel.jsx";
 import { supabase } from "./supabaseClient";
+
+// 👇 Si ya tienes el logo en assets, descomenta esta línea
+// y asegúrate de que el archivo exista en src/assets/constella-logo.png
+// import logoConstella from "./assets/constella-logo.png";
 
 const SECTIONS = {
   CONSTELLATION: "constellation",
@@ -25,10 +30,11 @@ function AppInner() {
   const [selectedCircleId, setSelectedCircleId] = useState(null);
   const [loadingCircles, setLoadingCircles] = useState(false);
 
-  // Asegurar que el perfil exista
+  // Asegurar que el perfil exista (versión simple)
   useEffect(() => {
     const ensureProfile = async () => {
       if (!user) return;
+
       const { data, error } = await supabase
         .from("constella_profiles")
         .select("*")
@@ -38,13 +44,16 @@ function AppInner() {
       if (!data && !error) {
         const username =
           user.email?.split("@")[0] || `user_${user.id.slice(0, 8)}`;
+
         await supabase.from("constella_profiles").insert({
           id: user.id,
           username,
           display_name: username,
+          email: user.email ?? null,
         });
       }
     };
+
     ensureProfile();
   }, [user]);
 
@@ -53,6 +62,7 @@ function AppInner() {
     const fetchCircles = async () => {
       if (!user) return;
       setLoadingCircles(true);
+
       const { data, error } = await supabase
         .from("constella_circles")
         .select("*")
@@ -65,11 +75,12 @@ function AppInner() {
           setSelectedCircleId(data[0].id);
         }
       }
+
       setLoadingCircles(false);
     };
 
     fetchCircles();
-  }, [user]);
+  }, [user, selectedCircleId]);
 
   const handleAddCircleLocal = (circle) => {
     setCircles((prev) => [...prev, circle]);
@@ -92,53 +103,97 @@ function AppInner() {
   }
 
   const selectedCircle =
-    circles.find((c) => c.id === selectedCircleId) || circles[0];
+    circles.find((c) => c.id === selectedCircleId) || circles[0] || null;
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
   };
 
-  return (
-    <div className="app-root">
-      <header className="app-header">
-        <div>
-          <h1 className="app-title">Constella</h1>
-          <p className="app-subtitle">
-            Una red de constelaciones personales · V2
-          </p>
-        </div>
-        <button className="chip logout-chip" onClick={handleLogout}>
-          Cerrar sesión
-        </button>
-      </header>
-
-      <main className="app-main">
-        {activeSection === SECTIONS.CONSTELLATION && (
+  // 🔹 Aquí centralizamos qué sección se muestra
+  const renderSection = () => {
+    switch (activeSection) {
+      case SECTIONS.CONSTELLATION:
+        return (
           <MyConstellation
             circles={circles}
             selectedCircleId={selectedCircleId}
             onSelectCircle={setSelectedCircleId}
             loading={loadingCircles}
           />
-        )}
+        );
 
-        {activeSection === SECTIONS.FEED && (
+      case SECTIONS.FEED:
+        return (
           <MosaicFeed circles={circles} selectedCircle={selectedCircle} />
-        )}
+        );
 
-        {activeSection === SECTIONS.CIRCLES && (
-          <CirclesManager circles={circles} onAddCircle={handleAddCircleLocal} />
-        )}
+      case SECTIONS.CIRCLES:
+        return (
+          <CirclesManager
+            circles={circles}
+            onAddCircle={handleAddCircleLocal}
+          />
+        );
 
-        {activeSection === SECTIONS.NOTES && <QuickNotes />}
+      case SECTIONS.NOTES:
+        return <QuickNotes />;
 
-        {activeSection === SECTIONS.CREATE && (
+      case SECTIONS.CREATE:
+        return (
           <CreateMoment circles={circles} selectedCircle={selectedCircle} />
-        )}
+        );
 
-        {activeSection === SECTIONS.CONNECTIONS && <ConnectionsPanel />}
+      case SECTIONS.CONNECTIONS:
+        return <ConnectionsPanel />;
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="app-root">
+      {/* HEADER */}
+      <header className="app-header">
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            justifyContent: "space-between",
+            width: "100%",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {/* Si tienes logo, usa esto */}
+            {/* <img
+              src={logoConstella}
+              alt="Constella"
+              style={{ height: 32, borderRadius: 999 }}
+            /> */}
+            <div>
+              <h1 className="app-title">Constella</h1>
+              <p className="app-subtitle">
+                Una red de constelaciones personales · V2
+              </p>
+            </div>
+          </div>
+
+          <button className="chip logout-chip" onClick={handleLogout}>
+            Cerrar sesión
+          </button>
+        </div>
+      </header>
+
+      {/* MAIN */}
+      <main className="app-main">
+        {/* Contenedor con pequeña animación al cambiar de sección */}
+        <div key={activeSection} className="section-transition">
+          {renderSection()}
+        </div>
       </main>
 
+      {/* FOOTER / NAVEGACIÓN */}
       <footer className="app-footer">
         <button
           className={`footer-btn ${
@@ -148,6 +203,7 @@ function AppInner() {
         >
           Constelación
         </button>
+
         <button
           className={`footer-btn ${
             activeSection === SECTIONS.FEED ? "active" : ""
@@ -156,14 +212,16 @@ function AppInner() {
         >
           Feed
         </button>
+
         <button
           className={`footer-btn ${
-            activeSection === SECTIONS.CREATE ? "primary" : ""
+            activeSection === SECTIONS.CREATE ? "active" : ""
           }`}
           onClick={() => setActiveSection(SECTIONS.CREATE)}
         >
           Crear
         </button>
+
         <button
           className={`footer-btn ${
             activeSection === SECTIONS.CIRCLES ? "active" : ""
@@ -172,6 +230,7 @@ function AppInner() {
         >
           Círculos
         </button>
+
         <button
           className={`footer-btn ${
             activeSection === SECTIONS.CONNECTIONS ? "active" : ""
@@ -180,6 +239,7 @@ function AppInner() {
         >
           Conexiones
         </button>
+
         <button
           className={`footer-btn ${
             activeSection === SECTIONS.NOTES ? "active" : ""
