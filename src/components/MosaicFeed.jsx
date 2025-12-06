@@ -1,30 +1,40 @@
+// src/components/MosaicFeed.jsx
 import React, { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
+import { useAuth } from "../AuthContext";
 
 export default function MosaicFeed({ circles, selectedCircle }) {
+  const { user } = useAuth();
+
   const [moments, setMoments] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState("");
 
-  const circleMap = new Map(circles.map((c) => [c.id, c]));
+  // Mapa rápido: circle_id -> círculo
+  const circleMap = new Map((circles || []).map((c) => [c.id, c]));
 
   useEffect(() => {
     const fetchFeed = async () => {
-      setLoading(true);
-
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      // Si no hay usuario, no hay feed
       if (!user) {
-        setLoading(false);
+        setMoments([]);
+        setStatus("Inicia sesión para ver tu feed.");
         return;
       }
 
+      setLoading(true);
+      setStatus("");
+
       // 1. Conseguir lista de conexiones aceptadas
-      const { data: conns } = await supabase
+      const { data: conns, error: connsError } = await supabase
         .from("constella_connections")
         .select("*")
         .or(`user_id.eq.${user.id},target_user_id.eq.${user.id}`)
         .eq("status", "accepted");
+
+      if (connsError) {
+        console.error("Error cargando conexiones:", connsError);
+      }
 
       const connectedIds = new Set();
       (conns || []).forEach((c) => {
@@ -32,7 +42,7 @@ export default function MosaicFeed({ circles, selectedCircle }) {
         else connectedIds.add(c.user_id);
       });
 
-      // 2. Traer momentos
+      // 2. Traer momentos (los propios + públicos + para conexiones)
       let query = supabase
         .from("constella_moments")
         .select("*")
@@ -48,9 +58,16 @@ export default function MosaicFeed({ circles, selectedCircle }) {
 
       const { data, error } = await query;
 
-      if (!error && data) {
-        // 3. Filtrar los de visibilidad "connections" para que solo
-        // se vean si son míos o de alguien conectado a mí.
+      if (error) {
+        console.error("Error cargando momentos:", error);
+        setStatus("No se pudo cargar el feed.");
+        setLoading(false);
+        return;
+      }
+
+      if (data) {
+        // 3. Filtrar visibilidad "connections":
+        // solo se ven si son míos o de alguien conectado conmigo.
         const filtered = data.filter((m) => {
           if (m.visibility !== "connections") return true;
           if (m.user_id === user.id) return true;
@@ -58,13 +75,19 @@ export default function MosaicFeed({ circles, selectedCircle }) {
         });
 
         setMoments(filtered);
+        if (filtered.length === 0) {
+          setStatus(
+            "Aún no hay momentos visibles. Crea uno o conéctate con otras personas."
+          );
+        }
       }
 
       setLoading(false);
     };
 
     fetchFeed();
-  }, [selectedCircle?.id]);
+    // Reactiva cuando cambie el usuario o el círculo seleccionado
+  }, [user?.id, selectedCircle?.id]);
 
   return (
     <div className="panel panel-scroll">
@@ -84,6 +107,9 @@ export default function MosaicFeed({ circles, selectedCircle }) {
       )}
 
       {loading && <p className="helper-text">Cargando momentos...</p>}
+      {!loading && status && (
+        <p className="helper-text">{status}</p>
+      )}
 
       <div className="mosaic-grid">
         {moments.map((m) => {
@@ -100,10 +126,13 @@ export default function MosaicFeed({ circles, selectedCircle }) {
                 </span>
                 <span className="mood-pill">{m.mood || "momento"}</span>
               </header>
+
               <h3 className="mosaic-title">{m.title}</h3>
+
               {m.content && (
                 <p className="mosaic-snippet">{m.content}</p>
               )}
+
               <footer className="mosaic-footer">
                 <span className="helper-text">
                   {new Date(m.created_at).toLocaleString()}
@@ -114,7 +143,7 @@ export default function MosaicFeed({ circles, selectedCircle }) {
         })}
       </div>
 
-      {!loading && moments.length === 0 && (
+      {!loading && moments.length === 0 && !status && (
         <p className="empty-text">
           Aún no hay momentos visibles. Crea uno desde la pestaña{" "}
           <strong>Crear</strong> o conéctate con otras personas.

@@ -1,27 +1,90 @@
-import React, { useState } from "react";
+// src/components/CirclesManager.jsx
+import React, { useState, useEffect } from "react";
+import { supabase } from "../supabaseClient";
+import { useAuth } from "../AuthContext";
 
+// Paleta sugerida
 const SUGGESTED_COLORS = ["#f97316", "#22c55e", "#38bdf8", "#e11d48", "#a855f7"];
 
-export default function CirclesManager({ circles, onAddCircle }) {
+export default function CirclesManager() {
+  const { user } = useAuth();
+
+  const [circles, setCircles] = useState([]);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [color, setColor] = useState(SUGGESTED_COLORS[0]);
+  const [status, setStatus] = useState("");
 
-  const handleSubmit = (e) => {
+  // ───────────────────────────────
+  // CARGAR CÍRCULOS DEL USUARIO
+  // ───────────────────────────────
+  useEffect(() => {
+    if (!user) return;
+
+    const loadCircles = async () => {
+      const { data, error } = await supabase
+        .from("constella_circles")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: true });
+
+      if (error) {
+        console.error("Error cargando círculos:", error);
+      } else {
+        setCircles(data || []);
+      }
+    };
+
+    loadCircles();
+  }, [user]);
+
+  // ───────────────────────────────
+  // CREAR NUEVO CÍRCULO EN SUPABASE
+  // ───────────────────────────────
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!name.trim()) {
-      alert("Ponle un nombre al círculo.");
+
+    if (!user) {
+      setStatus("Sesión no válida. Inicia sesión nuevamente.");
       return;
     }
-    onAddCircle({
-      name: name.trim(),
-      description: description.trim() || "Sin descripción aún.",
-      color,
-    });
+
+    if (!name.trim()) {
+      setStatus("Ponle un nombre al círculo.");
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("constella_circles")
+      .insert([
+        {
+          user_id: user.id,
+          name: name.trim(),
+          description: description.trim() || "Sin descripción aún.",
+          color: color,
+        },
+      ])
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error creando círculo:", error);
+      setStatus("Hubo un problema creando el círculo.");
+      return;
+    }
+
+    // Añadimos al estado local
+    setCircles((prev) => [...prev, data]);
+
+    // Limpiamos el formulario
     setName("");
     setDescription("");
+    setStatus("Círculo creado.");
   };
 
+  // ───────────────────────────────
+  // RENDER
+  // ───────────────────────────────
   return (
     <div className="panel panel-scroll">
       <div className="panel-header">
@@ -33,8 +96,10 @@ export default function CirclesManager({ circles, onAddCircle }) {
         </div>
       </div>
 
+      {/* CÍRCULOS EXISTENTES */}
       <section className="circles-section">
         <h3 className="section-title">Círculos actuales</h3>
+
         {circles.length === 0 ? (
           <p className="empty-text">
             Aún no has creado círculos. Empieza definiendo las áreas que más
@@ -58,8 +123,10 @@ export default function CirclesManager({ circles, onAddCircle }) {
         )}
       </section>
 
+      {/* CREAR NUEVO CÍRCULO */}
       <section className="circles-section">
         <h3 className="section-title">Crear un nuevo círculo</h3>
+
         <form className="form" onSubmit={handleSubmit}>
           <label className="field">
             <span>Nombre del círculo</span>
@@ -88,9 +155,7 @@ export default function CirclesManager({ circles, onAddCircle }) {
                 <button
                   key={c}
                   type="button"
-                  className={
-                    c === color ? "color-dot active" : "color-dot"
-                  }
+                  className={c === color ? "color-dot active" : "color-dot"}
                   style={{ backgroundColor: c }}
                   onClick={() => setColor(c)}
                 />
@@ -101,6 +166,8 @@ export default function CirclesManager({ circles, onAddCircle }) {
           <button type="submit" className="primary-btn">
             Añadir círculo
           </button>
+
+          {status && <p className="helper-text">{status}</p>}
         </form>
       </section>
     </div>
