@@ -1,7 +1,7 @@
 // src/components/CirclesManager.jsx
 import React, { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
-import { useAuth } from "../AuthContext";
+import { useAuth } from "../auth/AuthContext.jsx";
 
 // Paleta sugerida
 const SUGGESTED_COLORS = ["#f97316", "#22c55e", "#38bdf8", "#e11d48", "#a855f7"];
