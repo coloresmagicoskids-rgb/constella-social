@@ -846,3 +846,149 @@ textarea {
     transform: translateY(0);
   }
 }
+
+/* ─────────────────────────────────────────────
+   Ajustes generales para evitar scroll horizontal
+   ───────────────────────────────────────────── */
+html,
+body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+/* Que toda la app sea columna y use el alto completo */
+.app-root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Contenido principal centrado */
+.app-main {
+  flex: 1;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 16px 16px 90px; /* espacio para el footer */
+  box-sizing: border-box;
+}
+
+/* Panel base */
+.panel {
+  border-radius: 24px;
+  padding: 20px 22px 24px;
+}
+
+/* Footer base */
+.app-footer {
+  border-top: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+/* ─────────────────────────────────────────────
+   MODO MÓVIL
+   ───────────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Header más compacto */
+  .app-header {
+    padding: 12px 14px 4px;
+  }
+
+  .app-title {
+    font-size: 1.4rem;
+  }
+
+  .app-subtitle {
+    font-size: 0.78rem;
+    max-width: none;
+  }
+
+  /* El main ocupa todo el ancho del móvil */
+  .app-main {
+    padding: 10px 10px 96px;
+    max-width: 100%;
+  }
+
+  /* Paneles más redondeados y ajustados */
+  .panel {
+    margin-top: 6px;
+    border-radius: 20px;
+    padding: 16px 14px 18px;
+  }
+
+  .panel-header h2 {
+    font-size: 1rem;
+  }
+
+  .panel-subtitle {
+    font-size: 0.75rem;
+  }
+
+  /* Constellation oval más bajo en móvil */
+  .constellation-orbit,
+  .constellation-ellipse {
+    height: 260px;
+  }
+
+  /* Cards del feed: 1 sola columna */
+  .mosaic-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .mosaic-card {
+    padding: 12px 12px 14px;
+  }
+
+  /* Footer fijo tipo app móvil */
+  .app-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    max-width: 100%;
+    margin: 0;
+    padding: 6px 4px 10px;
+    background: rgba(9, 9, 15, 0.96);
+    backdrop-filter: blur(12px);
+    display: flex;
+    gap: 4px;
+    box-sizing: border-box;
+  }
+
+  .footer-btn {
+    flex: 1;
+    font-size: 0.78rem;
+    padding: 7px 4px;
+    border-radius: 999px;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .footer-btn.primary {
+    font-weight: 600;
+  }
+
+  /* Formularios más cómodos */
+  .field span {
+    font-size: 0.78rem;
+  }
+
+  .field input,
+  .field textarea,
+  .field select {
+    font-size: 0.8rem;
+  }
+
+  /* Chips (estado de ánimo / visibilidad) con más espacio táctil */
+  .emotion-row {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .chip,
+  .chip-primary {
+    font-size: 0.75rem;
+    padding: 6px 10px;
+  }
+}
