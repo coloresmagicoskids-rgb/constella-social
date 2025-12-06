@@ -1,7 +1,7 @@
 // src/components/NotesPanel.jsx
 import React, { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
-import { useAuth } from "../AuthContext";
+import { useAuth } from "../auth/AuthContext.jsx";
 
 export default function NotesPanel() {
   const { user } = useAuth();
