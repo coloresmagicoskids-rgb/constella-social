@@ -1,6 +1,6 @@
-// src/AuthContext.jsx
+// src/auth/AuthContext.jsx
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { supabase } from "./supabaseClient";
+import { supabase } from "../supabaseClient";
 
 const AuthContext = createContext(null);
 
@@ -101,5 +101,9 @@ export function AuthProvider({ children }) {
 }
 
 export function useAuth() {
-  return useContext(AuthContext);
+  const ctx = useContext(AuthContext);
+  if (!ctx) {
+    throw new Error("useAuth debe usarse dentro de <AuthProvider>");
+  }
+  return ctx;
 }
